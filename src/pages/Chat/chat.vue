@@ -269,7 +269,7 @@ const changeChatObject = (fid,fname,chatType)=>{
   isRouteAlive.value = false
   console.log(userInfo.value.id)
   //路由大路由跳转以后要删除
-  sessionStorage.setItem('fid',fid)
+  sessionStorage.setItem('fid',fid)  //这个fid 分为 fid和gid
   sessionStorage.setItem('uid',userInfo.value.id)
   sessionStorage.setItem('chatType',chatType)
   router.push({path:'/message',query:{fid,uid:userInfo.value.id,fname,chatType}})  //通过路由传递 好友id、用户id、好友昵称、通讯类别（）

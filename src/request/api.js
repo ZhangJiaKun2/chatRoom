@@ -135,6 +135,14 @@ export default {
         })
     },
 
+    //发送群消息
+    sendGroupMsg(data){
+        return request({
+            method:'post',
+            url:'index/sendGroupMsg',
+            data
+        })
+    },
     //创建一个贴子
     addPost(data){
         return request({

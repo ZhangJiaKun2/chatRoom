@@ -86,7 +86,7 @@ const sendMsgSocket = (data)=>{
 }
 
 //消息发送 测试
-const sendMsgSockets = ()=>{
+const sendMsgSockets = async ()=>{
   let newData = {
     from:sessionStorage.getItem('uid'),
     types:0,
@@ -98,21 +98,31 @@ const sendMsgSockets = ()=>{
   messageInfo.value.push(newData)
   positionScroll()
   //将数据保存到数据库
-  proxy.https.mySendMessage({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),msg:sendMessage.value,type:0}).then(
-      res=>{
-        //成功以后  通过websocket发送消息
-        sendMsgSocket({
-          msg:sendMessage.value,uid:sessionStorage.getItem('uid'),
-          fid:sessionStorage.getItem('fid'),
-          type:0,
-          time:new Date(),
-          imgurl:userInfo.value.imgurl,
-        })
-        //消息发送框清空
-        sendMessage.value = ''
-        positionScroll()
-      }
-  )
+  if(route.query.chatType === 'oneUser'){
+    await proxy.https.mySendMessage({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),msg:sendMessage.value,type:0}).then(
+        res=>{
+          //成功以后  通过websocket发送消息
+          sendMsgSocket({
+            msg:sendMessage.value,uid:sessionStorage.getItem('uid'),
+            fid:sessionStorage.getItem('fid'),
+            type:0,
+            time:new Date(),
+            imgurl:userInfo.value.imgurl,
+          })
+          //消息发送框清空
+          sendMessage.value = ''
+          positionScroll()
+        }
+    )
+  }else if(route.query.chatType === 'group'){
+    console.log(1111111)
+    await proxy.https.sendGroupMsg({uid:sessionStorage.getItem('uid'),gid:sessionStorage.getItem('fid'),msg:sendMessage.value,type:0}).then(
+        res=>{
+          console.log(res,'groupdata')
+        }
+    )
+
+  }
 }
 
 //获取聊天记录
