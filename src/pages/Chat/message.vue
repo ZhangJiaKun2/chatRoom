@@ -117,12 +117,18 @@ const sendMsgSockets = ()=>{
 
 //获取聊天记录
 const getRecord = (uid,fid,nowPage,pageSize)=>{
-  proxy.https.getMsg({uid,fid,nowPage,pageSize}).then(
-      res=>{
-        console.log(res)
-        messageInfo.value = res.data.reverse();
-      }
-  )
+  if(route.query.chatType === 'oneUser'){
+    //查询该好友的消息
+    proxy.https.getMsg({uid,fid,nowPage,pageSize}).then(
+        res=>{
+          console.log(res)
+          messageInfo.value = res.data.reverse();
+        }
+    )
+  }else if(route.query.chatType === 'group'){
+    //查询群消息
+
+  }
 }
 //socket聊天数据接收
 const getOneToOneMsgSocket = ()=>{

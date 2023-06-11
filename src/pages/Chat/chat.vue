@@ -19,7 +19,7 @@
       </template>
       <div class="mainList">
         <div style="height:500px;overflow-y:auto">
-          <div class="friendList" @click="changeChatObject(item.id,item.name)" v-for="item in friend.friendList" :key="item.id">
+          <div class="friendList" @click="changeChatObject(item.id,item.name,item.itemType)" v-for="item in friend.friendList" :key="item.id">
             <img class="userIMG" :src="item.imgurl" alt="">
             <div class="countain">
               <div class="username">
@@ -32,7 +32,7 @@
             </div>
           </div>
 
-          <div class="friendList" @click="changeChatObject(item.id,item.name)" v-for="item in friend.groupList" :key="item.gid">
+          <div class="friendList" @click="changeChatObject(item.gid,item.name,item.itemType)" v-for="item in friend.groupList" :key="item.gid">
             <img class="userIMG" :src="item.imgurl" alt="">
             <div class="countain">
               <div class="username">
@@ -210,11 +210,12 @@ const getFriendsList = async (uid,type)=>{
   console.log(userStore.userInfo,'getFriend')
   await proxy.https.getFriendsList({uid,type}).then(
       res=>{
-        console.log(res)
-
+        res.data.forEach(item=>item['itemType'] = 'oneUser')
+        console.log(res.data)
         if (res.type === 'isFriend'){
           console.log(res.data)
           friend.friendList = [...res.data]
+
         }else{
           friend.applyFriendList = [...res.data]
         }
@@ -225,6 +226,8 @@ const getFriendsList = async (uid,type)=>{
 //获取群列表
 const getGroupList = async (uid)=>{
   let result = await proxy.https.getGroupList({uid})
+  result.data.forEach(item=>item['itemType'] = 'group')
+  console.log(result.data)
   friend.groupList = [...result.data]
 }
 
@@ -261,14 +264,15 @@ const disagreeApply = async (fid)=>{
 }
 
 //切换聊天对象  ===> 获取聊天信息
-const changeChatObject = (fid,fname)=>{
+const changeChatObject = (fid,fname,chatType)=>{
   //获取与好友对应的聊天信息  uid,fid,nowPage,pageSize
   isRouteAlive.value = false
   console.log(userInfo.value.id)
   //路由大路由跳转以后要删除
   sessionStorage.setItem('fid',fid)
   sessionStorage.setItem('uid',userInfo.value.id)
-  router.push({path:'/message',query:{fid,uid:userInfo.value.id,fname}})
+  sessionStorage.setItem('chatType',chatType)
+  router.push({path:'/message',query:{fid,uid:userInfo.value.id,fname,chatType}})  //通过路由传递 好友id、用户id、好友昵称、通讯类别（）
   nextTick(()=>{
     isRouteAlive.value = true
   })
