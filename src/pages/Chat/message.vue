@@ -72,17 +72,36 @@ const sockets = {
   },
   getOneToOneMsg(data){
     console.log(data)
+  },
+
+  groupMsg(data){
+    console.log(data)
+  },
+  groupmsg(data){
+    console.log(data,'groupmsg')
+    let newData = {
+      from:data.fromid,
+      types:data.type,
+      message:data.msg,
+      imgurl:data.imgurl,
+      time:data.time
+    }
+    messageInfo.value.push(newData)
   }
 };
 
 
 
 const sendMsgSocket = (data)=>{
-  //判断是群聊 还是 一对一
-  // if(){
-  //
-  // }
-  proxy.$socket.io.emit('OneToOneMsg',data.msg,data.uid,data.fid,data.types,data.time,data.imgurl)
+  // 判断是群聊 还是 一对一
+  if(route.query.chatType === 'oneUser'){
+    console.log(12)
+    proxy.$socket.io.emit('OneToOneMsg',data.msg,data.uid,data.fid,data.types,data.time,data.imgurl)
+  }else if(route.query.chatType === 'group'){
+    console.log(11)
+    proxy.$socket.io.emit('groupMsg',data.msg,data.uid,data.fid,data.types,data.time,data.imgurl)
+  }
+
 }
 
 //消息发送 测试
@@ -118,7 +137,17 @@ const sendMsgSockets = async ()=>{
     console.log(1111111)
     await proxy.https.sendGroupMsg({uid:sessionStorage.getItem('uid'),gid:sessionStorage.getItem('fid'),msg:sendMessage.value,type:0}).then(
         res=>{
-          console.log(res,'groupdata')
+          //成功以后  通过websocket发送消息
+          sendMsgSocket({
+            msg:sendMessage.value,uid:sessionStorage.getItem('uid'),
+            fid:sessionStorage.getItem('fid'),
+            type:0,
+            time:new Date(),
+            imgurl:userInfo.value.imgurl,
+          })
+          //消息发送框清空
+          sendMessage.value = ''
+          positionScroll()
         }
     )
 
@@ -126,26 +155,37 @@ const sendMsgSockets = async ()=>{
 }
 
 //获取聊天记录
-const getRecord = (uid,fid,nowPage,pageSize)=>{
-  if(route.query.chatType === 'oneUser'){
+const getRecord = (nowPage,pageSize)=>{
+  if(sessionStorage.getItem('chatType') === 'oneUser'){
     //查询该好友的消息
-    proxy.https.getMsg({uid,fid,nowPage,pageSize}).then(
+    console.log(sessionStorage.getItem('uid'),sessionStorage.getItem('fid'))
+    proxy.https.getMsg({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),nowPage,pageSize}).then(
         res=>{
           console.log(res)
           messageInfo.value = res.data.reverse();
         }
     )
-  }else if(route.query.chatType === 'group'){
+  }else if(sessionStorage.getItem('chatType') === 'group'){
     //查询群消息
-
+    console.log(sessionStorage.getItem('fid'))
+    proxy.https.getGroupMsg({gid:sessionStorage.getItem('fid'),nowPage,pageSize}).then(
+        res=>{
+          console.log(res)
+          messageInfo.value = res.data.reverse();
+        }
+    )
   }
 }
 //socket聊天数据接收
-const getOneToOneMsgSocket = ()=>{
-  proxy.$socket.io.on('OneToOneMsg',(msg,fromid)=>{
-    console.log('后端发送的消息为'+fromid+'和'+msg)
-  })
-}
+// const getOneToOneMsgSocket = ()=>{
+//   proxy.$socket.io.on('OneToOneMsg',(msg,fromid)=>{
+//     console.log('后端发送的消息为'+fromid+'和'+msg)
+//   })
+//
+//   proxy.$socket.io.on('groupmsg',(a,b,c,d)=>{
+//     console.log(a,b,c,d,'groupmsg接收的消息')
+//   })
+// }
 
 //选择图片上传
 const selectPic = ()=>{
@@ -189,7 +229,11 @@ const onchangede = (e)=>{
           let path = item.path.replace('data',"").replaceAll('\\',"/")
           let url = 'http://localhost:3000'+path   //整合url
           //先存进数据库
-          await proxy.https.mySendMessage({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),msg:url,type:1})
+          if(sessionStorage.getItem('chatType') === 'oneUser'){
+            await proxy.https.mySendMessage({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),msg:url,type:1})
+          }else {
+            await proxy.https.sendGroupMsg({uid:sessionStorage.getItem('uid'),gid:sessionStorage.getItem('fid'),msg:url,type:1})
+          }
           //通过socket发送消息
           sendMsgSocket({
             msg:url,
@@ -234,20 +278,13 @@ const positionScroll = ()=>{
 //   })
 // }
 
-
-watch(routeQueryFid, (newValue,oldValue)=>{
-  console.log(newValue,oldValue)
-  getRecord(sessionStorage.getItem('uid'),newValue,0,10)
-})
-
 onBeforeMount(()=>{
   proxy.$addSockets(sockets, proxy);
   console.log(route.query)
-  getRecord(sessionStorage.getItem('uid'),sessionStorage.getItem('fid'),0,10)
-  getOneToOneMsgSocket()
-
-
+  getRecord(0,10)
+  // getOneToOneMsgSocket()
 })
+
 onMounted(()=>{
   setTimeout(()=>{
     const chatBody = document.querySelector('.chatBody')

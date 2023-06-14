@@ -196,6 +196,9 @@ const sockets = {
         item.lastTime = data.time
       }
     })
+  },
+  group(data){
+    console.log(data)
   }
 };
 
@@ -226,7 +229,11 @@ const getFriendsList = async (uid,type)=>{
 //获取群列表
 const getGroupList = async (uid)=>{
   let result = await proxy.https.getGroupList({uid})
-  result.data.forEach(item=>item['itemType'] = 'group')
+  result.data.forEach(item=> {
+    item['itemType'] = 'group'
+    console.log(item.gid)
+    proxy.$socket.io.emit('group',item.gid)
+  })
   console.log(result.data)
   friend.groupList = [...result.data]
 }
@@ -266,6 +273,7 @@ const disagreeApply = async (fid)=>{
 //切换聊天对象  ===> 获取聊天信息
 const changeChatObject = (fid,fname,chatType)=>{
   //获取与好友对应的聊天信息  uid,fid,nowPage,pageSize
+  //用来刷新页面
   isRouteAlive.value = false
   console.log(userInfo.value.id)
   //路由大路由跳转以后要删除

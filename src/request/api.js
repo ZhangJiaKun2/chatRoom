@@ -143,6 +143,14 @@ export default {
             data
         })
     },
+    //获取群消息
+    getGroupMsg(data){
+        return request({
+            method:'post',
+            url:'/index/getGroupMsg',
+            data
+        })
+    },
     //创建一个贴子
     addPost(data){
         return request({
