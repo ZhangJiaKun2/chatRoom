@@ -1,7 +1,7 @@
 # Vue 3 + Vite
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+聊天室+论坛项目
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+聊天室主要功能：单聊、群聊、添加/删除好友、创建群聊，目前仅支持发送图片和文字信息
+论坛主要功能：发帖、删除帖子、查看帖子、评论帖子
+个人信息管理：个人信息的修改
