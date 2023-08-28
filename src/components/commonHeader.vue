@@ -1,6 +1,7 @@
 <template>
   <div class="logo" />
   <div class="navigator">
+
     <a-menu
         theme="light"
         v-model:selectedKeys="selectedKeys"
@@ -85,6 +86,7 @@ import {ref, reactive, getCurrentInstance, onMounted, onBeforeUnmount} from 'vue
 import {useRouter} from "vue-router";
 import { storeToRefs } from 'pinia'
 import { user } from '../store/login.js'
+
 
 const {ctx,proxy} = getCurrentInstance()
 const router = useRouter()

@@ -5,13 +5,14 @@
   </template>
   <div class="chatwithfriend">
     <div class="chatBody" ref="chatBody">
-      <div :style="[item.from===route.query.uid ? {flexDirection:'row-reverse'}:{flexDirection: 'row'}]" class="userMessage" v-for="item in messageInfo" :key="item.time">
+      <div :style="[item.from===route.query.uid ? {flexDirection:'row-reverse'}:{flexDirection: 'row'}]" class="userMessage" v-for="(item,index) in messageInfo" :key="item.time">
         <img class="userAvatar" :src="item.imgurl" alt="">
         <div class="textMessage" v-if="!parseInt(item.types)">
           {{item.message}}
         </div>
         <div class="my-img" v-else>
-          <img class="sendImg"  :src="item.message" alt="">
+<!--          <img class="sendImg"  :src="" alt="">-->
+          <chat-image class="sendImg" :ref="(el)=>chatImageArray[index]=el"  :imgSrc="item.message"></chat-image>
         </div>
       </div>
     </div>
@@ -45,7 +46,8 @@ const route = useRoute()
 import {user} from "../../store/login.js";
 import {storeToRefs} from "pinia";
 
-console.log(proxy.emoji,'emoji')
+
+// console.log(proxy.emoji,'emoji')
 
 const userStore = user();
 let { token,userInfo} = storeToRefs(userStore);
@@ -57,6 +59,8 @@ let messageInfo = ref([])
 let sendMessage = ref('')
 
 let routeQueryFid = ref(route.query.fid)
+
+let chatImageArray = ref([])
 
 const sockets = {
   OneToOneMsg(data) {
@@ -95,27 +99,25 @@ const sockets = {
 const sendMsgSocket = (data)=>{
   // 判断是群聊 还是 一对一
   if(route.query.chatType === 'oneUser'){
-    console.log(12)
     proxy.$socket.io.emit('OneToOneMsg',data.msg,data.uid,data.fid,data.types,data.time,data.imgurl)
   }else if(route.query.chatType === 'group'){
-    console.log(11)
     proxy.$socket.io.emit('groupMsg',data.msg,data.uid,data.fid,data.types,data.time,data.imgurl)
   }
 
 }
 
-//消息发送 测试
+//消息发送
 const sendMsgSockets = async ()=>{
   let newData = {
-    from:sessionStorage.getItem('uid'),
-    types:0,
-    message:sendMessage.value,
-    imgurl:userInfo.value.imgurl,
+    from:sessionStorage.getItem('uid'),  //发送方
+    types:0,                                 //消息类型  0文字消息  1图片消息
+    message:sendMessage.value,               //消息内容
+    imgurl:userInfo.value.imgurl,            //发送方的头像
     time:new Date()
   }
   //添加到渲染数据中
   messageInfo.value.push(newData)
-  positionScroll()
+  positionScroll()     //滚动条移动
   //将数据保存到数据库
   if(route.query.chatType === 'oneUser'){
     await proxy.https.mySendMessage({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),msg:sendMessage.value,type:0}).then(
@@ -196,14 +198,15 @@ const selectPic = ()=>{
 // controller = new AbortController();
 // // let signal = controller.signal
 const onchangede = (e)=>{
-  let formData = new FormData();
+  console.log(chatImageArray.value,chatImageArray.value.length)
   // console.log(e.target.files)
   let fileList = e.target.files
   //前端读取图片
   const fileReader = new FileReader();
   fileReader.readAsDataURL(fileList[0]);
-  fileReader.onload = (event) => {   //读取文件完成后的回调
+  fileReader.onload = async (event) => {   //读取文件完成后的回调
       const {result} = event.target;
+      console.log(result)
       let newData = {
         from:sessionStorage.getItem('uid'),
         types:1,
@@ -211,46 +214,29 @@ const onchangede = (e)=>{
         imgurl:userInfo.value.imgurl,
         time:new Date()
       }
+      positionScroll()
       console.log(newData)
       messageInfo.value.push(newData)
-  };
-  formData.append("user", sessionStorage.getItem('uid'));
-  formData.append("module", 'friend/'+sessionStorage.getItem('fid'));
-  for (let i = 0; i < fileList.length; i++) {
-    console.log(fileList[i])
-    let suffix = fileList[i].type.split('/')[1]
-    formData.append("type", suffix);
-    formData.append('file', fileList[i])
-  }
-  proxy.https.uploadFiles(formData).then(
-      res=>{
-        console.log(res)
-        res.data.forEach(async item=>{
-          let path = item.path.replace('data',"").replaceAll('\\',"/")
-          let url = 'http://localhost:3000'+path   //整合url
-          //先存进数据库
-          if(sessionStorage.getItem('chatType') === 'oneUser'){
-            await proxy.https.mySendMessage({uid:sessionStorage.getItem('uid'),fid:sessionStorage.getItem('fid'),msg:url,type:1})
-          }else {
-            await proxy.https.sendGroupMsg({uid:sessionStorage.getItem('uid'),gid:sessionStorage.getItem('fid'),msg:url,type:1})
-          }
-          //通过socket发送消息
-          sendMsgSocket({
-            msg:url,
-            uid:sessionStorage.getItem('uid'),
-            fid:sessionStorage.getItem('fid'),
-            types:1,
-            time:new Date,
-            imgurl:userInfo.value.imgurl
-          })
+      console.log(chatImageArray.value,chatImageArray.value.length)
+
+      //在页面更新以后 才能获取到组件，，调用子组件方法 上传图片
+      nextTick(async ()=>{
+        console.log(chatImageArray.value,chatImageArray.value.length)
+        let url = await chatImageArray.value[chatImageArray.value.length-1].onLoad(fileList)
+        console.log(url)
+        sendMsgSocket({
+          msg:url,
+          uid:sessionStorage.getItem('uid'),
+          fid:sessionStorage.getItem('fid'),
+          types:1,
+          time:newData.time,
+          imgurl:userInfo.value.imgurl
         })
-        // console.log(img.img)
-        positionScroll()
-      },
-      rej=>{
-        console.log(rej)
-      }
-  )
+      })
+    // console.log(res)
+
+  };
+
 }
 
 
